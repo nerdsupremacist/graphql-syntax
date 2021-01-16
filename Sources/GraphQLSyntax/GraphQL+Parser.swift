@@ -11,6 +11,8 @@ extension GraphQL {
         public var body: AnyParser<GraphQL.Root> {
             return Parser.implementation
         }
+
+        public init() { }
     }
 
     private struct _Parser: Syntax.Parser {
