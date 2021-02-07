@@ -263,26 +263,22 @@ extension GraphQL.Parser {
 
         private struct OperationHeaderParser: Parser {
             var body: AnyParser<OperationHeader> {
-                Either {
-                    Group {
-                        OperationKindParser()
+                return Group {
+                    OperationKindParser()
 
-                        IdentifierParser()
-                    }
-                    .map { OperationHeader(kind: $0, name: $1) }
-
-
-                    Maybe {
-                        Word("query").kind("graphql.keyword")
-                    }
-                    .map(to: OperationHeader(kind: .query, name: nil))
+                    IdentifierParser().maybe()
                 }
+                .map { OperationHeader(kind: $0, name: $1) }
             }
         }
 
         var body: AnyParser<GraphQL.Operation> {
             return Group {
                 OperationHeaderParser()
+                    .maybe()
+                    .map { header in
+                        return header ?? OperationHeader(kind: .query, name: nil)
+                    }
 
                 SelectionSetParser()
             }

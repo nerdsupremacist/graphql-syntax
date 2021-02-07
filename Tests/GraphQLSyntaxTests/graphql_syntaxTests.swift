@@ -10,7 +10,7 @@ final class graphql_syntaxTests: XCTestCase {
             lastname
         }
 
-        query {
+        query MyQuery {
             post(id: 42) {
                 text
                 author {
@@ -23,7 +23,7 @@ final class graphql_syntaxTests: XCTestCase {
         }
         """
 
-        let parser =  GraphQL.Parser()
+        let parser = GraphQL.Parser()
         let syntaxTree = try! parser.syntaxTree(code)
         print(String(data: try! JSONEncoder().encode(syntaxTree), encoding: .utf8)!)
     }

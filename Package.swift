@@ -10,7 +10,7 @@ let package = Package(
                  targets: ["GraphQLSyntax"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/nerdsupremacist/Syntax.git", from: "1.0.2"),
+        .package(url: "https://github.com/nerdsupremacist/Syntax.git", from: "1.0.3"),
     ],
     targets: [
         .target(
