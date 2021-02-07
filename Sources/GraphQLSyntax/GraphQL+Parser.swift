@@ -38,6 +38,20 @@ extension GraphQL {
 
 }
 
+extension GraphQL.Value {
+
+    public struct Parser: Syntax.Parser {
+        private static let implementation = GraphQL.Parser.ValueParser().eraseToAnyParser()
+
+        public var body: AnyParser<GraphQL.Value> {
+            return Parser.implementation
+        }
+
+        public init() { }
+    }
+
+}
+
 extension GraphQL.Parser {
 
     fileprivate enum RootObject {
