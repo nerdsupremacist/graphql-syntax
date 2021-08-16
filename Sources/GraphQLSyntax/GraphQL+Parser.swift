@@ -123,13 +123,14 @@ extension GraphQL.Parser {
                     .map(GraphQL.Value.array)
 
                     VariableParser().map(GraphQL.Value.variable)
-                    IdentifierParser().map(GraphQL.Value.identifier)
                     StringLiteral().map(GraphQL.Value.string)
                     IntLiteral().map(GraphQL.Value.int)
                     DoubleLiteral().map(GraphQL.Value.double)
                     BooleanLiteral().map(GraphQL.Value.bool)
 
                     Word("null").map(to: GraphQL.Value.null)
+
+                    IdentifierParser().map(GraphQL.Value.identifier)
                 }
             }
         }
