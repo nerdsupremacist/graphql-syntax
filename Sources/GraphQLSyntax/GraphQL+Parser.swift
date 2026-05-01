@@ -8,7 +8,7 @@ extension GraphQL {
 
         private static let implementation = _Parser().eraseToAnyParser()
 
-        public var body: AnyParser<GraphQL.Root> {
+        public var body: any Syntax.Parser<GraphQL.Root> {
             return Parser.implementation
         }
 
@@ -16,7 +16,7 @@ extension GraphQL {
     }
 
     private struct _Parser: Syntax.Parser {
-        var body: AnyParser<GraphQL.Root> {
+        var body: any Syntax.Parser<GraphQL.Root> {
             return Parser.RootObjectParser()
                 .star()
                 .map { objects in
@@ -43,7 +43,7 @@ extension GraphQL.Value {
     public struct Parser: Syntax.Parser {
         private static let implementation = GraphQL.Parser.ValueParser().eraseToAnyParser()
 
-        public var body: AnyParser<GraphQL.Value> {
+        public var body: any Syntax.Parser<GraphQL.Value> {
             return Parser.implementation
         }
 
@@ -60,7 +60,7 @@ extension GraphQL.Parser {
     }
 
     fileprivate struct RootObjectParser: Parser {
-        var body: AnyParser<RootObject> {
+        var body: any Parser<RootObject> {
             Either {
                 FragmentParser().map(RootObject.fragment)
                 OperationParser().map(RootObject.operation)
@@ -73,71 +73,69 @@ extension GraphQL.Parser {
 extension GraphQL.Parser {
 
     fileprivate struct IdentifierParser: Parser {
-        var body: AnyParser<String> {
+        var body: any Parser<String> {
             return RegularExpression("[_A-Za-z][_0-9A-Za-z]*").map { String($0.text) }
         }
     }
 
     fileprivate struct VariableParser: Parser {
-        var body: AnyParser<String> {
+        var body: any Parser<String> {
             return RegularExpression("\\$([_A-Za-z][_0-9A-Za-z]*)")
                 .map { String($0.text) }
                 .kind("graphql.variable")
         }
     }
 
-    fileprivate struct ValueParser: Parser {
-        var body: AnyParser<GraphQL.Value> {
-            Recursive { parser in
+    fileprivate struct ValueParser: RecursiveParser {
+        var body: any Parser<GraphQL.Value> {
                 Either {
                     Group {
                         "{"
-
+                        
                         Group {
                             Either {
                                 StringLiteral()
-
+                                
                                 IdentifierParser()
                             }
-
+                            
                             ":"
-
-                            parser
+                            
+                            self
                         }
                         .separated(by: ",")
-
+                        
                         "}"
                     }
                     .map { Dictionary($0) { $1 } }
                     .map(GraphQL.Value.dictionary)
-
-
+                    
+                    
                     Group {
                         "["
-
-                        parser
+                        
+                        self
                             .separated(by: ",")
-
+                        
                         "]"
                     }
                     .map(GraphQL.Value.array)
-
+                    
                     VariableParser().map(GraphQL.Value.variable)
                     StringLiteral().map(GraphQL.Value.string)
                     IntLiteral().map(GraphQL.Value.int)
                     DoubleLiteral().map(GraphQL.Value.double)
                     BooleanLiteral().map(GraphQL.Value.bool)
-
+                    
                     Word("null").map(to: GraphQL.Value.null)
-
+                    
                     IdentifierParser().map(GraphQL.Value.identifier)
                 }
-            }
         }
     }
 
     fileprivate struct FieldArgumentParser: Parser {
-        var body: AnyParser<GraphQL.Argument> {
+        var body: any Parser<GraphQL.Argument> {
             return Group {
                 IdentifierParser()
                     .kind("graphql.argument")
@@ -151,9 +149,9 @@ extension GraphQL.Parser {
     }
 
     fileprivate struct FieldSelectionParser: Parser {
-        let selectionSet: AnyParser<GraphQL.SelectionSet>
+        let selectionSet: any Parser<GraphQL.SelectionSet>
 
-        var body: AnyParser<GraphQL.FieldSelection> {
+        var body: any Parser<GraphQL.FieldSelection> {
             return Group {
                 Maybe {
                     IdentifierParser()
@@ -179,9 +177,9 @@ extension GraphQL.Parser {
     }
 
     fileprivate struct TypeConditionalParser: Parser {
-        let selectionSet: AnyParser<GraphQL.SelectionSet>
+        let selectionSet: any Parser<GraphQL.SelectionSet>
 
-        var body: AnyParser<GraphQL.TypeConditional> {
+        var body: any Parser<GraphQL.TypeConditional> {
             return Group {
                 "..."
 
@@ -196,10 +194,10 @@ extension GraphQL.Parser {
     }
 
     fileprivate struct SelectionParser: Parser {
-        let selectionSet: AnyParser<GraphQL.SelectionSet>
+        let selectionSet: any Parser<GraphQL.SelectionSet>
 
-        var body: AnyParser<GraphQL.Selection> {
-            Either {
+        var body: any Parser<GraphQL.Selection> {
+            Either<GraphQL.Selection> {
                 TypeConditionalParser(selectionSet: selectionSet).map(GraphQL.Selection.typeConditional)
 
                 FieldSelectionParser(selectionSet: selectionSet).map(GraphQL.Selection.field)
@@ -214,22 +212,20 @@ extension GraphQL.Parser {
         }
     }
 
-    fileprivate struct SelectionSetParser: Parser {
-        var body: AnyParser<GraphQL.SelectionSet> {
-            Recursive { parser in
+    fileprivate struct SelectionSetParser: RecursiveParser {
+        var body: any Parser<GraphQL.SelectionSet> {
                 "{"
 
-                SelectionParser(selectionSet: parser)
+                SelectionParser(selectionSet: self)
                     .plus()
                     .map(GraphQL.SelectionSet.init)
 
                 "}"
-            }
         }
     }
 
     fileprivate struct FragmentParser: Parser {
-        var body: AnyParser<GraphQL.Fragment> {
+        var body: any Parser<GraphQL.Fragment> {
             return Group {
                 "fragment".kind("graphql.keyword")
 
@@ -246,7 +242,7 @@ extension GraphQL.Parser {
     }
 
     fileprivate struct OperationKindParser: Parser {
-        var body: AnyParser<GraphQL.Operation.Kind> {
+        var body: any Parser<GraphQL.Operation.Kind> {
             Either {
                 Word("query").map(to: GraphQL.Operation.Kind.query)
                 Word("mutation").map(to: GraphQL.Operation.Kind.mutation)
@@ -263,7 +259,7 @@ extension GraphQL.Parser {
         }
 
         private struct OperationHeaderParser: Parser {
-            var body: AnyParser<OperationHeader> {
+            var body: any Parser<OperationHeader> {
                 return Group {
                     OperationKindParser()
 
@@ -273,7 +269,7 @@ extension GraphQL.Parser {
             }
         }
 
-        var body: AnyParser<GraphQL.Operation> {
+        var body: any Parser<GraphQL.Operation> {
             return Group {
                 OperationHeaderParser()
                     .maybe()
